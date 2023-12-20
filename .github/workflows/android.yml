@@ -1,0 +1,36 @@
+name: Json
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install apktool
+        run: sudo apt-get install -y apktool
+      
+      - name: Grant execute permission for script
+        run: chmod +x pif.sh
+
+      - name: Generate JSON file
+        run: ./pif.sh
+
+      - name: Check differences in pif.json
+        run: |
+          if git diff --exit-code pif.json; then
+            echo "pif.json is the same, no need to commit."
+          else
+            git config --global user.name "daboynb"
+            git config --global user.email "username@users.noreply.github.com"
+            git add pif.json
+            git commit -m "Update pif.json"
+            git push
+          fi
