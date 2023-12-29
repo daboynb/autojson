@@ -1,5 +1,30 @@
 #!/bin/bash
 
+# Function to set variable to "null" if empty
+set_to_null() {
+    if [ -z "$1" ]; then
+        echo "null"
+    else
+        echo "$1"
+    fi
+}
+
+# Create the json file
+create_json() {
+cat << EOF > ${service_file}
+{
+  "PRODUCT": "${var_PRODUCT}",
+  "DEVICE": "${var_DEVICE}",
+  "MANUFACTURER": "${var_MANUFACTURER}",
+  "BRAND": "${var_BRAND}",
+  "MODEL": "${var_MODEL}",
+  "FINGERPRINT": "${var_FINGERPRINT}",
+  "SECURITY_PATCH": "${var_SECURITY_PATCH}",
+  "FIRST_API_LEVEL": "${var_FIRST_API_LEVEL}"
+}
+EOF
+}
+
 # RSS Feed URL
 url="https://sourceforge.net/projects/xiaomi-eu-multilang-miui-roms/rss?path=/xiaomi.eu/Xiaomi.eu-app"
 
@@ -17,15 +42,6 @@ lastLink=$(curl --silent --show-error "${url}" | grep -oP '<link>\K[^<]+' | head
 curl --silent --show-error --location --output "${apk_file}" "${lastLink}"
 
 apktool d "${apk_file}" -o "${extracted_apk}" -f
-
-# Function to set variable to "null" if empty
-set_to_null() {
-    if [ -z "$1" ]; then
-        echo "null"
-    else
-        echo "$1"
-    fi
-}
 
 # Assign values to variables
 var_MANUFACTURER=$(grep 'MANUFACTURER' ${extracted_apk}/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
@@ -46,22 +62,6 @@ var_MODEL=$(set_to_null "$var_MODEL")
 var_FINGERPRINT=$(set_to_null "$var_FINGERPRINT")
 var_SECURITY_PATCH=$(set_to_null "$var_SECURITY_PATCH")
 var_FIRST_API_LEVEL=$(set_to_null "$var_FIRST_API_LEVEL")
-
-# Create the json file
-create_json() {
-cat << EOF > ${service_file}
-{
-  "PRODUCT": "${var_PRODUCT}",
-  "DEVICE": "${var_DEVICE}",
-  "MANUFACTURER": "${var_MANUFACTURER}",
-  "BRAND": "${var_BRAND}",
-  "MODEL": "${var_MODEL}",
-  "FINGERPRINT": "${var_FINGERPRINT}",
-  "SECURITY_PATCH": "${var_SECURITY_PATCH}",
-  "FIRST_API_LEVEL": "${var_FIRST_API_LEVEL}"
-}
-EOF
-}
 
 create_json
 
