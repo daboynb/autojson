@@ -4,7 +4,7 @@
 url="https://sourceforge.net/projects/xiaomi-eu-multilang-miui-roms/rss?path=/xiaomi.eu/Xiaomi.eu-app"
 
 # Fetch RSS feed and extract the last link
-lastLink=$(curl -s "https://sourceforge.net/projects/xiaomi-eu-multilang-miui-roms/rss?path=/xiaomi.eu/Xiaomi.eu-app" | grep -oP '<link>\K[^<]+' | head -2 | tail -1)
+lastLink=$(curl -s "${url}" | grep -oP '<link>\K[^<]+' | head -2 | tail -1)
 
 # Output the last link
 wget --user-agent="Wget" "$lastLink" -O xiaomi.apk
@@ -60,4 +60,4 @@ EOF
 
 create_json
 
-cat pif.json
+cat "${SERVICE_FILE}"
