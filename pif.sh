@@ -6,6 +6,7 @@ url="https://sourceforge.net/projects/xiaomi-eu-multilang-miui-roms/rss?path=/xi
 tmp_dir="$(mktemp -d)"
 apk_file="${tmp_dir}/xiaomi.apk"
 extracted_apk="${tmp_dir}/Extractedapk"
+service_file="pif.json"
 
 trap 'rm -rf "${tmp_dir}"' EXIT
 
@@ -46,11 +47,9 @@ var_FINGERPRINT=$(set_to_null "$var_FINGERPRINT")
 var_SECURITY_PATCH=$(set_to_null "$var_SECURITY_PATCH")
 var_FIRST_API_LEVEL=$(set_to_null "$var_FIRST_API_LEVEL")
 
-SERVICE_FILE="pif.json"
-
 # Create the json file
 create_json() {
-cat << EOF > ${SERVICE_FILE}
+cat << EOF > ${service_file}
 {
   "PRODUCT": "${var_PRODUCT}",
   "DEVICE": "${var_DEVICE}",
@@ -66,4 +65,4 @@ EOF
 
 create_json
 
-cat "${SERVICE_FILE}"
+cat "${service_file}"
