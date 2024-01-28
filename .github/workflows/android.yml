@@ -31,6 +31,7 @@ jobs:
             git config --global user.name "daboynb"
             git config --global user.email "username@users.noreply.github.com"
             git add pif.json
+            git add pif_kernel.json
             git commit -m "Update pif.json"
             git push
           fi
