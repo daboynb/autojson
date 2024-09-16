@@ -1,0 +1,38 @@
+name: Json
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  push: 
+    branches:
+      - main
+      
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # - name: Install apktool
+      #   run: sudo apt-get install -y apktool jq
+      
+      - name: Grant execute permission for script
+        run: chmod +x pif.sh
+
+      - name: Generate JSON file
+        run: ./pif.sh
+
+      - name: Check differences in pif.json
+        run: |
+          if git diff --exit-code chiteroman.json; then
+            echo "chiteroman.json is the same, no need to commit."
+          else
+            git config --global user.name "daboynb"
+            git config --global user.email "username@users.noreply.github.com"
+            git add chiteroman.json
+            git add osmosis.json
+            git commit -m "Update pif.json"
+            git push
+          fi
