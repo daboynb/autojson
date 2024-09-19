@@ -6,7 +6,7 @@ on:
   push: 
     branches:
       - main
-      
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,9 +14,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
-      - name : Rm old
-        run : | 
+
+      - name: Rm old
+        run: | 
           rm *.json
 
       - name: Grant execute permission for script
@@ -25,11 +25,13 @@ jobs:
       - name: Generate JSON file
         run: ./pif.sh
 
-      - name: Replace old JSON files with new ones
+      - name: Check if there are changes
         run: |
           git config --global user.name "daboynb"
           git config --global user.email "username@users.noreply.github.com"
-          git add chiteroman.json
-          git add osmosis.json
-          git commit -m "Update pif.json"
-          git push
+          git add *.json
+          git diff --cached --quiet || git commit -m "Update pif.json" 
+          
+      - name: Push changes if there are any
+        if: success()
+        run: git push
