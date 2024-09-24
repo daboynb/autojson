@@ -1,21 +1,21 @@
 {
   // Build Fields
-    "MANUFACTURER": "null",
-    "MODEL": "null",
-    "FINGERPRINT": "null",
-    "BRAND": "null",
-    "PRODUCT": "null",
-    "DEVICE": "null",
-    "RELEASE": "",
-    "ID": "",
-    "INCREMENTAL": "",
-    "TYPE": "",
-    "TAGS": "",
-    "SECURITY_PATCH": "",
+    "MANUFACTURER": "Google",
+    "MODEL": "Pixel 9 Pro XL",
+    "FINGERPRINT": "google/komodo_beta/komodo:15/AP31.240617.015/12207491:user/release-keys",
+    "BRAND": "google",
+    "PRODUCT": "komodo_beta",
+    "DEVICE": "komodo",
+    "RELEASE": "15",
+    "ID": "AP31.240617.015",
+    "INCREMENTAL": "12207491",
+    "TYPE": "user",
+    "TAGS": "release-keys",
+    "SECURITY_PATCH": "2024-08-05",
     "DEVICE_INITIAL_SDK_INT": "24",
 
   // System Properties
-    "*.build.id": "",
-    "*.security_patch": "",
+    "*.build.id": "AP31.240617.015",
+    "*.security_patch": "2024-08-05",
     "*api_level": "24"
 }
