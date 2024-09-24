@@ -1,11 +1,11 @@
 {
   // Build Fields
     "MANUFACTURER": "Google",
-    "MODEL": "Pixel 8a",
-    "FINGERPRINT": "google/akita_beta/akita:15/AP31.240617.015/12207491:user/release-keys",
+    "MODEL": "Pixel 6",
+    "FINGERPRINT": "google/oriole_beta/oriole:15/AP31.240617.015/12207491:user/release-keys",
     "BRAND": "google",
-    "PRODUCT": "akita_beta",
-    "DEVICE": "akita",
+    "PRODUCT": "oriole_beta",
+    "DEVICE": "oriole",
     "RELEASE": "15",
     "ID": "AP31.240617.015",
     "INCREMENTAL": "12207491",
