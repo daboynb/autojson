@@ -57,8 +57,8 @@ for FIELD in $ALLFIELDS; do
 done;
 
 # Default values for new fields
-# [ -z "$spoofBuild" ] && spoofBuild=true;
-# [ -z "$spoofBuildZygisk" ] && spoofBuildZygisk=true;
+[ -z "$spoofBuild" ] && spoofBuild=true;
+[ -z "$spoofBuildZygisk" ] && spoofBuildZygisk=true;
 [ -z "$spoofProps" ] && spoofProps=true;
 [ -z "$spoofProvider" ] && spoofProvider=true;
 [ -z "$spoofSignature" ] && spoofSignature=false;
