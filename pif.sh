@@ -6,10 +6,27 @@ rm *json
 url="https://sourceforge.net/projects/xiaomi-eu-multilang-miui-roms/rss?path=/xiaomi.eu/Xiaomi.eu-app"
 
 # Fetch RSS feed and extract the last link
-lastLink=$(curl -s "https://sourceforge.net/projects/xiaomi-eu-multilang-miui-roms/rss?path=/xiaomi.eu/Xiaomi.eu-app" | grep -oP '<link>\K[^<]+' | head -2 | tail -1)
+lastLink=$(curl -s "$url" | grep -oP '<link>\K[^<]+' | head -2 | tail -1)
 
-# Output the last link
-wget --user-agent="Wget" "$lastLink" -O xiaomi.apk
+# Function to retry download up to 3 times
+retry_count=0
+max_retries=3
+
+while [ $retry_count -lt $max_retries ]; do
+    wget --user-agent="Wget" "$lastLink" -O xiaomi.apk
+    if [ $? -eq 0 ]; then
+        echo "Download succeeded!"
+        break
+    else
+        retry_count=$((retry_count + 1))
+        echo "Download failed. Attempt $retry_count of $max_retries."
+    fi
+
+    if [ $retry_count -eq $max_retries ]; then
+        echo "Download failed after $max_retries attempts. Exiting."
+        exit 1
+    fi
+done
 
 apktool d xiaomi.apk -o Extractedapk -f
 
