@@ -1,13 +1,10 @@
 #!/bin/sh
 
-case "$1" in
-  -h|--help|help) echo "sh migrate.sh [-f] [-o] [-a] [in-file] [out-file]"; exit 0;;
-esac;
-
 N="
 ";
 
 case "$1" in
+  -h|--help|help) echo "sh migrate.sh [-f] [-o] [in-file] [out-file]"; exit 0;;
   -i|--install|install) INSTALL=1; shift;;
   *) echo "custom.pif.json migration script \
     $N  by osm0sis @ xda-developers $N";;
@@ -15,18 +12,25 @@ esac;
 
 item() { echo "- $@"; }
 die() { [ "$INSTALL" ] || echo "$N$N! $@"; exit 1; }
-grep_get_json() { eval set -- "$(cat "$FILE" | tr -d '\r\n' | grep -m1 -o "\"$1\""'.*' | cut -d: -f2-)"; echo "$1" | sed -e 's|"|\\\\\\"|g' -e 's|[,}]*$||'; }
-grep_check_json() { grep -q "$1" "$FILE" && [ "$(grep_get_json $1)" ]; }
+grep_get_json() {
+  local target="$FILE";
+  [ -n "$2" ] && target="$2";
+  eval set -- "$(cat "$target" | tr -d '\r\n' | grep -m1 -o "$1"'".*' | cut -d: -f2-)";
+  echo "$1" | sed -e 's|"|\\\\\\"|g' -e 's|[,}]*$||';
+}
+grep_check_json() {
+  local target="$FILE";
+  [ -n "$2" ] && target="$2";
+  grep -q "$1" "$target" && [ "$(grep_get_json $1 "$target")" ];
+}
 
-case "$1" in
-  -f|--force|force) FORCE=1; shift;;
-esac;
-case "$1" in
-  -o|--override|override) OVERRIDE=1; shift;;
-esac;
-case "$1" in
-  -a|--advanced|advanced) ADVANCED=1; shift;;
-esac;
+until [ -z "$1" -o -f "$1" ]; do
+  case "$1" in
+    -f|--force|force) FORCE=1; shift;;
+    -o|--override|override) OVERRIDE=1; shift;;
+    *) die "Invalid argument/file not found: $1";;
+  esac;
+done;
 
 if [ -f "$1" ]; then
   FILE="$1";
@@ -52,6 +56,7 @@ grep_check_json api_level && [ ! "$FORCE" ] && die "No migration required";
 FPFIELDS="BRAND PRODUCT DEVICE RELEASE ID INCREMENTAL TYPE TAGS";
 ALLFIELDS="MANUFACTURER MODEL FINGERPRINT $FPFIELDS SECURITY_PATCH DEVICE_INITIAL_SDK_INT";
 
+# Collect values for all fields
 for FIELD in $ALLFIELDS; do
   eval $FIELD=\"$(grep_get_json $FIELD)\";
 done;
@@ -116,19 +121,22 @@ fi;
 
 [ "$INSTALL" ] || item "Writing fields and properties to updated custom.pif.json ...";
 
+# Generate the JSON file while avoiding a trailing comma on the last field
 (echo "{";
-echo "  // Build Fields";
 for FIELD in $ALLFIELDS; do
-  eval echo '\ \ \ \ \"$FIELD\": \"'\$$FIELD'\",';
+  LAST_FIELD="DEVICE_INITIAL_SDK_INT"
+  if [ "$FIELD" != "$LAST_FIELD" ]; then
+    eval echo '\ \ \ \ \"$FIELD\": \"'\$$FIELD'\",';
+  else
+    eval echo '\ \ \ \ \"$FIELD\": \"'\$$FIELD'\",';
+    # Add the custom fields after DEVICE_INITIAL_SDK_INT
+    echo "    \"spoofProvider\": true,";
+    echo "    \"spoofProps\": true,";
+    echo "    \"spoofSignature\": false,";
+    echo "    \"DEBUG\": false";
+  fi
 done;
-echo "$N  // System Properties";
-echo '    "*.build.id": "'$ID'",';
-echo '    "*.security_patch": "'$SECURITY_PATCH'",';
-[ -z "$VNDK_VERSION" ] || echo '    "*.vndk.version": "'$VNDK_VERSION'",';
-echo '    "*api_level": "'$DEVICE_INITIAL_SDK_INT'",';
-if [ "$ADVANCED" ]; then
-  echo "$N  // Advanced Settings";
-  echo '    "verboseLogs": "0",';
-fi) | sed '$s/,/\n}/' > "$OUT";
+echo "}";
+) > "$OUT";
 
 [ "$INSTALL" ] || cat "$OUT";

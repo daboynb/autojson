@@ -1,13 +1,10 @@
 #!/bin/sh
 
-case "$1" in
-  -h|--help|help) echo "sh migrate.sh [-f] [-o] [-a] [in-file] [out-file]"; exit 0;;
-esac;
-
 N="
 ";
 
 case "$1" in
+  -h|--help|help) echo "sh migrate.sh [-f] [-o] [-a] [in-file] [out-file]"; exit 0;;
   -i|--install|install) INSTALL=1; shift;;
   *) echo "custom.pif.json migration script \
     $N  by osm0sis @ xda-developers $N";;
@@ -15,18 +12,26 @@ esac;
 
 item() { echo "- $@"; }
 die() { [ "$INSTALL" ] || echo "$N$N! $@"; exit 1; }
-grep_get_json() { eval set -- "$(cat "$FILE" | tr -d '\r\n' | grep -m1 -o "$1"'".*' | cut -d: -f2-)"; echo "$1" | sed -e 's|"|\\\\\\"|g' -e 's|[,}]*$||'; }
-grep_check_json() { grep -q "$1" "$FILE" && [ "$(grep_get_json $1)" ]; }
+grep_get_json() {
+  local target="$FILE";
+  [ -n "$2" ] && target="$2";
+  eval set -- "$(cat "$target" | tr -d '\r\n' | grep -m1 -o "$1"'".*' | cut -d: -f2-)";
+  echo "$1" | sed -e 's|"|\\\\\\"|g' -e 's|[,}]*$||';
+}
+grep_check_json() {
+  local target="$FILE";
+  [ -n "$2" ] && target="$2";
+  grep -q "$1" "$target" && [ "$(grep_get_json $1 "$target")" ];
+}
 
-case "$1" in
-  -f|--force|force) FORCE=1; shift;;
-esac;
-case "$1" in
-  -o|--override|override) OVERRIDE=1; shift;;
-esac;
-case "$1" in
-  -a|--advanced|advanced) ADVANCED=1; shift;;
-esac;
+until [ -z "$1" -o -f "$1" ]; do
+  case "$1" in
+    -f|--force|force) FORCE=1; shift;;
+    -o|--override|override) OVERRIDE=1; shift;;
+    -a|--advanced|advanced) ADVANCED=1; shift;;
+    *) die "Invalid argument/file not found: $1";;
+  esac;
+done;
 
 if [ -f "$1" ]; then
   FILE="$1";
@@ -49,19 +54,12 @@ grep_check_json api_level && [ ! "$FORCE" ] && die "No migration required";
 
 [ "$INSTALL" ] || item "Parsing fields ...";
 
-FPFIELDS="BRAND PRODUCT DEVICE RELEASE ID";
-ALLFIELDS="ID BRAND DEVICE FINGERPRINT MANUFACTURER MODEL PRODUCT SECURITY_PATCH DEVICE_INITIAL_SDK_INT spoofBuild spoofBuildZygisk spoofProps spoofProvider spoofSignature"
+FPFIELDS="BRAND PRODUCT DEVICE RELEASE ID INCREMENTAL TYPE TAGS";
+ALLFIELDS="MANUFACTURER MODEL FINGERPRINT $FPFIELDS SECURITY_PATCH DEVICE_INITIAL_SDK_INT";
 
 for FIELD in $ALLFIELDS; do
   eval $FIELD=\"$(grep_get_json $FIELD)\";
 done;
-
-# Default values for new fields
-[ -z "$spoofBuild" ] && spoofBuild=true;
-[ -z "$spoofBuildZygisk" ] && spoofBuildZygisk=true;
-[ -z "$spoofProps" ] && spoofProps=true;
-[ -z "$spoofProvider" ] && spoofProvider=true;
-[ -z "$spoofSignature" ] && spoofSignature=false;
 
 if [ -n "$ID" ] && ! grep_check_json build.id; then
   item 'Simple entry ID found, changing to ID field and "*.build.id" property ...';
@@ -112,26 +110,54 @@ if [ -z "$SECURITY_PATCH" -o "$SECURITY_PATCH" = "null" ]; then
 fi;
 
 if [ -z "$DEVICE_INITIAL_SDK_INT" -o "$DEVICE_INITIAL_SDK_INT" = "null" ]; then
-  item 'Missing required DEVICE_INITIAL_SDK_INT field and "*api_level" property value found, setting to 24 ...';
-  DEVICE_INITIAL_SDK_INT=24;
+  item 'Missing required DEVICE_INITIAL_SDK_INT field and "*api_level" property value found, setting to 25 ...';
+  DEVICE_INITIAL_SDK_INT=25;
 fi;
+
+# Advanced Settings
+ADVSETTINGS="spoofBuild spoofProps spoofProvider spoofSignature verboseLogs";
+
+# Always set advanced settings
+ADVANCED=1;
+
+# Initialize advanced settings with spoofBuild=1 and others=0
+spoofBuild=1;
+spoofProps=0;
+spoofProvider=0;
+spoofSignature=0;
+verboseLogs=0;
 
 if [ -f "$OUT" ]; then
   item "Renaming old file to $(basename "$OUT").bak ...";
   mv -f "$OUT" "$OUT.bak";
-  grep -qE "verboseLogs|VERBOSE_LOGS" "$OUT.bak" && ADVANCED=1;
+  # Remove or comment out code that reads advanced settings from old file
+  # if grep -qE "verboseLogs|VERBOSE_LOGS" "$OUT.bak"; then
+  #   ADVANCED=1;
+  #   grep_check_json VERBOSE_LOGS "$OUT.bak" && verboseLogs="$(grep_get_json VERBOSE_LOGS "$OUT.bak")";
+  #   for SETTING in $ADVSETTINGS; do
+  #     eval grep_check_json $SETTING \"$OUT.bak\" \&\& $SETTING=\"$(grep_get_json $SETTING "$OUT.bak")\";
+  #   done;
+  #   grep -q '//"\*.security_patch"' "$OUT.bak" && SECURITY_COMMENT='//';
+  # fi;
 fi;
 
 [ "$INSTALL" ] || item "Writing fields and properties to updated custom.pif.json ...";
 
-# Write the JSON fields in the specified order
 (echo "{";
+echo "  // Build Fields";
 for FIELD in $ALLFIELDS; do
   eval echo '\ \ \ \ \"$FIELD\": \"'\$$FIELD'\",';
 done;
+echo "$N  // System Properties";
+echo '    "*.build.id": "'$ID'",';
+echo "    $SECURITY_COMMENT"'"*.security_patch": "'$SECURITY_PATCH'",';
+[ -z "$VNDK_VERSION" ] || echo '    "*.vndk.version": "'$VNDK_VERSION'",';
+echo '    "*api_level": "'$DEVICE_INITIAL_SDK_INT'",';
 if [ "$ADVANCED" ]; then
   echo "$N  // Advanced Settings";
-  echo '    "verboseLogs": "0",';
+  for SETTING in $ADVSETTINGS; do
+    eval echo '\ \ \ \ \"$SETTING\": \"'\$$SETTING'\",';
+  done;
 fi) | sed '$s/,/\n}/' > "$OUT";
 
 [ "$INSTALL" ] || cat "$OUT";

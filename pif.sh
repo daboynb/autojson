@@ -1,94 +1,71 @@
 #!/bin/bash
 
-# get_value() {
-#   value="$(grep "$1" "${fields_file}" | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')"
-#   echo "${value:-null}"
-# }
+rm *json
 
-# # Create the json file
-# create_json() {
-#   cat <<EOF >"${service_file}"
-# {
-#   "PRODUCT": "$(get_value PRODUCT)",
-#   "DEVICE": "$(get_value DEVICE)",
-#   "MANUFACTURER": "$(get_value MANUFACTURER)",
-#   "BRAND": "$(get_value BRAND)",
-#   "MODEL": "$(get_value MODEL)",
-#   "FINGERPRINT": "$(get_value FINGERPRINT)",
-#   "SECURITY_PATCH": "$(get_value SECURITY_PATCH)",
-#   "FIRST_API_LEVEL": "$(get_value FIRST_API_LEVEL)"
-# }
-# EOF
-# }
+# RSS Feed URL
+url="https://sourceforge.net/projects/xiaomi-eu-multilang-miui-roms/rss?path=/xiaomi.eu/Xiaomi.eu-app"
 
-# # RSS Feed URL
-# url="https://sourceforge.net/projects/xiaomi-eu-multilang-miui-roms/rss?path=/xiaomi.eu/Xiaomi.eu-app"
+# Fetch RSS feed and extract the last link
+lastLink=$(curl -s "https://sourceforge.net/projects/xiaomi-eu-multilang-miui-roms/rss?path=/xiaomi.eu/Xiaomi.eu-app" | grep -oP '<link>\K[^<]+' | head -2 | tail -1)
 
-# tmp_dir="$(mktemp -d)"
-# apk_file="${tmp_dir}/xiaomi.apk"
-# extracted_apk="${tmp_dir}/Extractedapk"
-# service_file="pif.json"
-# fields_file="${extracted_apk}/res/xml/inject_fields.xml"
+# Output the last link
+wget --user-agent="Wget" "$lastLink" -O xiaomi.apk
 
-# trap 'rm -rf "${tmp_dir}"' EXIT
+apktool d xiaomi.apk -o Extractedapk -f
 
-# # Fetch RSS feed and extract the last link
-# lastLink=$(curl --silent --show-error "${url}" | grep -oP '<link>\K[^<]+' | head -2 | tail -1)
+# Function to set variable to "null" if empty
+set_to_null() {
+    if [ -z "$1" ]; then
+        echo "null"
+    else
+        echo "$1"
+    fi
+}
 
-# # Output the last link
-# # Loop until the file is downloaded successfully
-# while true; do
-#   if curl --silent --show-error --location --output "${apk_file}" "${lastLink}"; then
-#     echo "File downloaded successfully."
-#     break
-#   else
-#     echo "Download failed. Retrying in 2 minutes..."
-#     sleep 120
-#   fi
-# done
+# Assign values to variables
+var_MANUFACTURER=$(grep 'MANUFACTURER' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
+var_BRAND=$(grep 'BRAND' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
+var_DEVICE=$(grep 'DEVICE' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
+var_PRODUCT=$(grep 'PRODUCT' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
+var_MODEL=$(grep 'MODEL' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
+var_FINGERPRINT=$(grep 'FINGERPRINT' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
+var_SECURITY_PATCH=$(grep 'SECURITY_PATCH' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
+var_FIRST_API_LEVEL=$(grep 'FIRST_API_LEVEL' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
 
-# apktool d "${apk_file}" -o "${extracted_apk}" -f
+# Set variables to "null" if empty
+var_MANUFACTURER=$(set_to_null "$var_MANUFACTURER")
+var_BRAND=$(set_to_null "$var_BRAND")
+var_DEVICE=$(set_to_null "$var_DEVICE")
+var_PRODUCT=$(set_to_null "$var_PRODUCT")
+var_MODEL=$(set_to_null "$var_MODEL")
+var_FINGERPRINT=$(set_to_null "$var_FINGERPRINT")
+var_SECURITY_PATCH=$(set_to_null "$var_SECURITY_PATCH")
+var_FIRST_API_LEVEL=$(set_to_null "$var_FIRST_API_LEVEL")
 
-# create_json
+PIF_FILE="pif.json"
 
-# cat "${service_file}"
+# Create the json file
+create_json() {
+cat << EOF > ${PIF_FILE}
+{
+  "PRODUCT": "${var_PRODUCT}",
+  "DEVICE": "${var_DEVICE}",
+  "MANUFACTURER": "${var_MANUFACTURER}",
+  "BRAND": "${var_BRAND}",
+  "MODEL": "${var_MODEL}",
+  "FINGERPRINT": "${var_FINGERPRINT}",
+  "SECURITY_PATCH": "${var_SECURITY_PATCH}",
+  "FIRST_API_LEVEL": "${var_FIRST_API_LEVEL}"
+}
+EOF
+}
 
-# # Use the Osmosis's migrate.sh script to adapt the values
-# chmod +x *.sh
+create_json
 
-# # I know they are duplicates, I'm making some tests
-# ./migrate_chiteroman.sh -i "${service_file}" edited.json
+cat pif.json
 
-# mv edited.json pif.json
+./chiteroman.sh pif.json chiteroman.json
+./osmosis.sh pif.json osmosis.json
 
-# ./migrate_chiteroman.sh -i "${service_file}" edited.json
-
-# mv edited.json chiteroman.json
-
-# jq 'del(.RELEASE)' chiteroman.json > chiteroman_modified.json
-
-# mv chiteroman_modified.json chiteroman.json
-
-# ./migrate_osmosis.sh -i "${service_file}" edited.json
-
-# mv edited.json osmosis.json
-
-while true; do
-  if wget https://raw.githubusercontent.com/daboynb/build.prop/main/chiteroman.json; then
-    echo "File downloaded successfully."
-    break
-  else
-    echo "Download failed. Retrying in 3 seconds..."
-    sleep 3
-  fi
-done
-
-while true; do
-  if wget https://raw.githubusercontent.com/daboynb/build.prop/main/osmosis.json; then
-    echo "File downloaded successfully."
-    break
-  else
-    echo "Download failed. Retrying in 3 seconds..."
-    sleep 3
-  fi
-done
+rm -rf Extractedapk
+rm *.apk
