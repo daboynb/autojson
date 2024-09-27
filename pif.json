@@ -1,10 +1,10 @@
 {
-  "PRODUCT": "komodo_beta",
-  "DEVICE": "komodo",
+  "PRODUCT": "tokay_beta",
+  "DEVICE": "tokay",
   "MANUFACTURER": "Google",
   "BRAND": "google",
-  "MODEL": "Pixel 9 Pro XL",
-  "FINGERPRINT": "google/komodo_beta/komodo:15/AP31.240617.015/12207491:user/release-keys",
-  "SECURITY_PATCH": "2024-08-05",
+  "MODEL": "Pixel 9",
+  "FINGERPRINT": "google/tokay_beta/tokay:15/AP41.240823.009/12329489:user/release-keys",
+  "SECURITY_PATCH": "2024-09-05",
   "FIRST_API_LEVEL": "null"
 }
