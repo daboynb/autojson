@@ -86,3 +86,5 @@ cat pif.json
 
 rm -rf Extractedapk
 rm *.apk
+
+# Update 26/09/24: I’ve notified the EU team about the build.prop repo, as they are better than I am at automating the process of pulling new fingerprints when burned, since I don’t have something that notifies me when a fingerprint is banned. I’ve started pulling from them again
