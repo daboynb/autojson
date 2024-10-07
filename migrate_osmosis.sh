@@ -114,47 +114,38 @@ if [ -z "$DEVICE_INITIAL_SDK_INT" -o "$DEVICE_INITIAL_SDK_INT" = "null" ]; then
   DEVICE_INITIAL_SDK_INT=25;
 fi;
 
-# Advanced Settings
 ADVSETTINGS="spoofBuild spoofProps spoofProvider spoofSignature verboseLogs";
 
-# Always set advanced settings
-ADVANCED=1;
-
-# Initialize advanced settings with spoofBuild=1 and others=0
 spoofBuild=1;
-spoofProps=0;
-spoofProvider=0;
+spoofProps=1;
+spoofProvider=1;
 spoofSignature=0;
 verboseLogs=0;
 
 if [ -f "$OUT" ]; then
   item "Renaming old file to $(basename "$OUT").bak ...";
   mv -f "$OUT" "$OUT.bak";
-  # Remove or comment out code that reads advanced settings from old file
-  # if grep -qE "verboseLogs|VERBOSE_LOGS" "$OUT.bak"; then
-  #   ADVANCED=1;
-  #   grep_check_json VERBOSE_LOGS "$OUT.bak" && verboseLogs="$(grep_get_json VERBOSE_LOGS "$OUT.bak")";
-  #   for SETTING in $ADVSETTINGS; do
-  #     eval grep_check_json $SETTING \"$OUT.bak\" \&\& $SETTING=\"$(grep_get_json $SETTING "$OUT.bak")\";
-  #   done;
-  #   grep -q '//"\*.security_patch"' "$OUT.bak" && SECURITY_COMMENT='//';
-  # fi;
+  if grep -qE "verboseLogs|VERBOSE_LOGS" "$OUT.bak"; then
+    ADVANCED=1;
+    grep_check_json VERBOSE_LOGS "$OUT.bak" && verboseLogs="$(grep_get_json VERBOSE_LOGS "$OUT.bak")";
+    for SETTING in $ADVSETTINGS; do
+      eval grep_check_json $SETTING \"$OUT.bak\" \&\& $SETTING=\"$(grep_get_json $SETTING "$OUT.bak")\";
+    done;
+    grep -q '//"\*.security_patch"' "$OUT.bak" && SECURITY_COMMENT='//';
+  fi;
 fi;
 
 [ "$INSTALL" ] || item "Writing fields and properties to updated custom.pif.json ...";
 
 (echo "{";
-echo "  // Build Fields";
 for FIELD in $ALLFIELDS; do
   eval echo '\ \ \ \ \"$FIELD\": \"'\$$FIELD'\",';
 done;
-echo "$N  // System Properties";
 echo '    "*.build.id": "'$ID'",';
 echo "    $SECURITY_COMMENT"'"*.security_patch": "'$SECURITY_PATCH'",';
 [ -z "$VNDK_VERSION" ] || echo '    "*.vndk.version": "'$VNDK_VERSION'",';
 echo '    "*api_level": "'$DEVICE_INITIAL_SDK_INT'",';
 if [ "$ADVANCED" ]; then
-  echo "$N  // Advanced Settings";
   for SETTING in $ADVSETTINGS; do
     eval echo '\ \ \ \ \"$SETTING\": \"'\$$SETTING'\",';
   done;

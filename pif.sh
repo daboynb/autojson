@@ -1,90 +1,104 @@
 #!/bin/bash
 
-rm *json
+# Check for JSON files and remove them if they exist
+find . -maxdepth 1 -name "*.json" -exec rm {} \;
 
-# RSS Feed URL
-url="https://sourceforge.net/projects/xiaomi-eu-multilang-miui-roms/rss?path=/xiaomi.eu/Xiaomi.eu-app"
+# Check for backup files and remove them if they exist
+find . -maxdepth 1 -name "*.bak" -exec rm {} \;
 
-# Fetch RSS feed and extract the last link
-lastLink=$(curl -s "$url" | grep -oP '<link>\K[^<]+' | head -2 | tail -1)
+echo "Crawling Android Developers for latest Pixel Beta ..."
 
-# Function to retry download up to 3 times
-retry_count=0
-max_retries=3
+# Download the Pixel GSI HTML page
+wget -q -O PIXEL_GSI_HTML --no-check-certificate https://developer.android.com/topic/generic-system-image/releases 2>&1 || exit 1
 
-while [ $retry_count -lt $max_retries ]; do
-    wget --user-agent="Wget" "$lastLink" -O xiaomi.apk
-    if [ $? -eq 0 ]; then
-        echo "Download succeeded!"
-        break
-    else
-        retry_count=$((retry_count + 1))
-        echo "Download failed. Attempt $retry_count of $max_retries."
-    fi
+# Extract the first occurrence of a Beta version from the HTML
+grep -m1 -o 'li>.*(Beta)' PIXEL_GSI_HTML | cut -d\> -f2
 
-    if [ $retry_count -eq $max_retries ]; then
-        echo "Download failed after $max_retries attempts. Exiting."
-        exit 1
-    fi
-done
+# Get the release version, build ID, and incremental version
+RELEASE="$(grep -m1 'corresponding Google Pixel builds' PIXEL_GSI_HTML | grep -o '/versions/.*' | cut -d\/ -f3)"
+ID="$(grep -m1 -o 'Build:.*' PIXEL_GSI_HTML | cut -d\  -f2)"
+INCREMENTAL="$(grep -m1 -o "$ID-.*-" PIXEL_GSI_HTML | cut -d- -f2)"
 
-apktool d xiaomi.apk -o Extractedapk -f
+# Download the corresponding Google Pixel builds HTML page
+wget -q -O PIXEL_GET_HTML --no-check-certificate https://developer.android.com$(grep -m1 'corresponding Google Pixel builds' PIXEL_GSI_HTML | grep -o 'href.*' | cut -d\" -f2) 2>&1 || exit 1
 
-# Function to set variable to "null" if empty
-set_to_null() {
-    if [ -z "$1" ]; then
-        echo "null"
-    else
-        echo "$1"
-    fi
-}
+# Download the factory images for Google Pixel
+wget -q -O PIXEL_BETA_HTML --no-check-certificate https://developer.android.com$(grep -m1 'Factory images for Google Pixel' PIXEL_GET_HTML | grep -o 'href.*' | cut -d\" -f2) 2>&1 || exit 1
 
-# Assign values to variables
-var_MANUFACTURER=$(grep 'MANUFACTURER' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
-var_BRAND=$(grep 'BRAND' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
-var_DEVICE=$(grep 'DEVICE' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
-var_PRODUCT=$(grep 'PRODUCT' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
-var_MODEL=$(grep 'MODEL' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
-var_FINGERPRINT=$(grep 'FINGERPRINT' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
-var_SECURITY_PATCH=$(grep 'SECURITY_PATCH' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
-var_FIRST_API_LEVEL=$(grep 'FIRST_API_LEVEL' Extractedapk/res/xml/inject_fields.xml | sed 's/.*value="\([^"]*\)".*/\1/' | sed 's/" \/>//')
+# Extract model and product lists
+MODEL_LIST="$(grep -A1 'tr id=' PIXEL_BETA_HTML | grep 'td' | sed 's;.*<td>\(.*\)</td>;\1;')"
+PRODUCT_LIST="$(grep -o 'factory/.*_beta' PIXEL_BETA_HTML | cut -d\/ -f2)"
 
-# Set variables to "null" if empty
-var_MANUFACTURER=$(set_to_null "$var_MANUFACTURER")
-var_BRAND=$(set_to_null "$var_BRAND")
-var_DEVICE=$(set_to_null "$var_DEVICE")
-var_PRODUCT=$(set_to_null "$var_PRODUCT")
-var_MODEL=$(set_to_null "$var_MODEL")
-var_FINGERPRINT=$(set_to_null "$var_FINGERPRINT")
-var_SECURITY_PATCH=$(set_to_null "$var_SECURITY_PATCH")
-var_FIRST_API_LEVEL=$(set_to_null "$var_FIRST_API_LEVEL")
+# Download the security bulletin for Pixel
+wget -q -O PIXEL_SECBULL_HTML --no-check-certificate https://source.android.com/docs/security/bulletin/pixel 2>&1 || exit 1
 
-PIF_FILE="pif.json"
+# Get the latest security patch level
+SECURITY_PATCH="$(grep -A15 "$(grep -m1 -o 'Security patch level:.*' PIXEL_GSI_HTML | cut -d\  -f4-)" PIXEL_SECBULL_HTML | grep -m1 -B1 '</tr>' | grep 'td' | sed 's;.*<td>\(.*\)</td>;\1;')"
 
-# Create the json file
-create_json() {
-cat << EOF > ${PIF_FILE}
+# Check for device matching
+case "$1" in
+  -m)
+    DEVICE="$(getprop ro.product.device)"
+    case "$PRODUCT_LIST" in
+      *${DEVICE}_beta*)
+        MODEL="$(getprop ro.product.model)"
+        PRODUCT="${DEVICE}_beta"
+      ;;
+    esac
+  ;;
+esac
+
+echo "Selecting Pixel Beta device ..."
+if [ -z "$PRODUCT" ]; then
+  set_random_beta() {
+    local list_count="$(echo "$MODEL_LIST" | wc -l)"
+    local list_rand="$((RANDOM % list_count + 1))"
+    local IFS=$'\n'
+    set -- $MODEL_LIST
+    MODEL="$(eval echo \${$list_rand})"
+    set -- $PRODUCT_LIST
+    PRODUCT="$(eval echo \${$list_rand})"
+    DEVICE="$(echo "$PRODUCT" | sed 's/_beta//')"
+  }
+  set_random_beta
+fi
+
+echo "$MODEL ($PRODUCT)"
+
+echo "Dumping values to minimal pif.json ..."
+cat <<EOF | tee pif.json
 {
-  "PRODUCT": "${var_PRODUCT}",
-  "DEVICE": "${var_DEVICE}",
-  "MANUFACTURER": "${var_MANUFACTURER}",
-  "BRAND": "${var_BRAND}",
-  "MODEL": "${var_MODEL}",
-  "FINGERPRINT": "${var_FINGERPRINT}",
-  "SECURITY_PATCH": "${var_SECURITY_PATCH}",
-  "FIRST_API_LEVEL": "${var_FIRST_API_LEVEL}"
+  "MANUFACTURER": "Google",
+  "MODEL": "$MODEL",
+  "FINGERPRINT": "google/$PRODUCT/$DEVICE:$RELEASE/$ID/$INCREMENTAL:user/release-keys",
+  "PRODUCT": "$PRODUCT",
+  "DEVICE": "$DEVICE",
+  "SECURITY_PATCH": "$SECURITY_PATCH",
+  "DEVICE_INITIAL_SDK_INT": "32"
 }
 EOF
-}
 
-create_json
+# Remove temporary HTML files if they exist
+find . -maxdepth 1 -name "*_HTML" -exec rm {} \;
 
-cat pif.json
+# Add fields on chiteroman.json
+./migrate_chiteroman.sh pif.json chiteroman.json
 
-./chiteroman.sh pif.json chiteroman.json
-./osmosis.sh pif.json osmosis.json
+# Migrate osmosis
+./migrate_osmosis.sh -a pif.json osmosis.json 
 
-rm -rf Extractedapk
-rm *.apk
+# Delete prev pif
+rm pif.json
 
-# Update 26/09/24: I’ve notified the EU team about the build.prop repo, as they are better than I am at automating the process of pulling new fingerprints when burned, since I don’t have something that notifies me when a fingerprint is banned. I’ve started pulling from them again
+# No ts
+cp osmosis.json device_osmosis.json 
+
+# Adapt for tricky
+jq '.spoofProps = "0" | .spoofProvider = "0"' osmosis.json  > tmp.json
+
+# Get back original file
+rm  osmosis.json
+mv tmp.json osmosis.json 
+
+# Check for backup files and remove them if they exist
+find . -maxdepth 1 -name "*.bak" -exec rm {} \;

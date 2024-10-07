@@ -1,4 +1,4 @@
-name: Json
+name: Autojson (on schedule)
 
 on:
   schedule:
@@ -15,22 +15,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       
-      - name: Install apktool
-        run: sudo apt-get install -y apktool
-      
       - name: Grant execute permission for script
-        run: chmod +x pif.sh
+        run: chmod +x *.sh
 
       - name: Generate JSON file
         run: ./pif.sh
 
-      - name: Check if there are changes
+      - name: Check differences in chiteroman.json
         run: |
-          git config --global user.name "daboynb"
-          git config --global user.email "username@users.noreply.github.com"
-          git add *.json
-          git diff --cached --quiet || git commit -m "Update pif.json" 
-          
-      - name: Push changes if there are any
-        if: success()
-        run: git push
+          if git diff --exit-code chiteroman.json; then
+            echo "chiteroman.json is the same, no need to commit."
+          else
+            git config --global user.name "daboynb"
+            git config --global user.email "username@users.noreply.github.com"
+            git add chiteroman.json
+            git add osmosis.json
+            git add device_osmosis.json 
+            git commit -m "Update pif.json"
+            git push
+          fi

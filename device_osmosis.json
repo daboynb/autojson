@@ -12,8 +12,12 @@
     "TAGS": "release-keys",
     "SECURITY_PATCH": "2024-09-05",
     "DEVICE_INITIAL_SDK_INT": "32",
-    "spoofProvider": true,
-    "spoofProps": true,
-    "spoofSignature": false,
-    "DEBUG": false
+    "*.build.id": "AP41.240823.009",
+    "*.security_patch": "2024-09-05",
+    "*api_level": "32",
+    "spoofBuild": "1",
+    "spoofProps": "1",
+    "spoofProvider": "1",
+    "spoofSignature": "0",
+    "verboseLogs": "0"
 }

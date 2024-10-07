@@ -1,28 +1,23 @@
 {
-  // Build Fields
-    "MANUFACTURER": "Google",
-    "MODEL": "Pixel 9",
-    "FINGERPRINT": "google/tokay_beta/tokay:15/AP41.240823.009/12329489:user/release-keys",
-    "BRAND": "google",
-    "PRODUCT": "tokay_beta",
-    "DEVICE": "tokay",
-    "RELEASE": "15",
-    "ID": "AP41.240823.009",
-    "INCREMENTAL": "12329489",
-    "TYPE": "user",
-    "TAGS": "release-keys",
-    "SECURITY_PATCH": "2024-09-05",
-    "DEVICE_INITIAL_SDK_INT": "25",
-
-  // System Properties
-    "*.build.id": "AP41.240823.009",
-    "*.security_patch": "2024-09-05",
-    "*api_level": "25",
-
-  // Advanced Settings
-    "spoofBuild": "1",
-    "spoofProps": "0",
-    "spoofProvider": "0",
-    "spoofSignature": "0",
-    "verboseLogs": "0"
+  "MANUFACTURER": "Google",
+  "MODEL": "Pixel 9 Pro Fold",
+  "FINGERPRINT": "google/comet_beta/comet:15/AP41.240823.009/12329489:user/release-keys",
+  "BRAND": "google",
+  "PRODUCT": "comet_beta",
+  "DEVICE": "comet",
+  "RELEASE": "15",
+  "ID": "AP41.240823.009",
+  "INCREMENTAL": "12329489",
+  "TYPE": "user",
+  "TAGS": "release-keys",
+  "SECURITY_PATCH": "2024-09-05",
+  "DEVICE_INITIAL_SDK_INT": "32",
+  "*.build.id": "AP41.240823.009",
+  "*.security_patch": "2024-09-05",
+  "*api_level": "32",
+  "spoofBuild": "1",
+  "spoofProps": "0",
+  "spoofProvider": "0",
+  "spoofSignature": "0",
+  "verboseLogs": "0"
 }
