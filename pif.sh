@@ -49,19 +49,20 @@ case "$1" in
 esac
 
 echo "Selecting Pixel Beta device ..."
-
-# Always select the first one from the list 
-set_latest_beta() {
-    # Extract the first model and product from the list 
-    MODEL="$(echo "$MODEL_LIST" | head -n 1)"
-    PRODUCT="$(echo "$PRODUCT_LIST" | head -n 1)"
-    DEVICE="$(echo "$PRODUCT" | sed 's/_beta//')"
-}
-
-# Call the function to set the latest beta
-set_latest_beta
-
-echo "$MODEL ($PRODUCT)"
+if [ -z "$PRODUCT" ]; then
+  set_random_beta() {
+    local list_count="$(echo "$MODEL_LIST" | wc -l)";
+    local list_rand="$((RANDOM % $list_count + 1))";
+    local IFS=$'\n';
+    set -- $MODEL_LIST;
+    MODEL="$(eval echo \${$list_rand})";
+    set -- $PRODUCT_LIST;
+    PRODUCT="$(eval echo \${$list_rand})";
+    DEVICE="$(echo "$PRODUCT" | sed 's/_beta//')";
+  }
+  set_random_beta;
+fi;
+echo "$MODEL ($PRODUCT)";
 
 echo "Dumping values to minimal pif.json ..."
 cat <<EOF | tee pif.json
