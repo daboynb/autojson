@@ -4,4 +4,8 @@ If you wanna help me
 
 ## Credits
 
-Module scripts were adapted from [PlayIntegrityFork](https://github.com/osm0sis/PlayIntegrityFork) module.
+This module was created using **Shell Scripts** that have been carefully adapted and customized from the original work of the **PlayIntegrityFork** module.
+
+The original scripts were forked from the following repository:
+
+- [osm0sis/PlayIntegrityFork](https://github.com/osm0sis/PlayIntegrityFork)
