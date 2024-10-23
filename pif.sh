@@ -84,6 +84,7 @@ find . -maxdepth 1 -name "*_HTML" -exec rm {} \;
 
 # Migrate osmosis
 ./migrate_osmosis.sh -a pif.json osmosis.json 
+jq '{MANUFACTURER, MODEL, FINGERPRINT, SECURITY_PATCH}' chiteroman.json
 
 # Delete prev pif
 rm pif.json
