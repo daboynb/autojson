@@ -98,24 +98,14 @@ find . -maxdepth 1 -name "*_HTML" -exec rm {} \;
 
 # Add fields on chiteroman.json
 ./migrate_chiteroman.sh pif.json chiteroman.json
-# I'll add this back when chiteroman will publish the release
-#jq 'del(.BRAND, .PRODUCT, .DEVICE, .RELEASE, .ID, .INCREMENTAL, .TYPE, .TAGS, .spoofProvider, .spoofProps, .spoofSignature, .DEBUG)' chiteroman.json > tmp.json && mv tmp.json chiteroman.json
+jq 'del(.BRAND, .PRODUCT, .DEVICE, .RELEASE, .ID, .INCREMENTAL, .TYPE, .TAGS, .spoofProvider, .spoofProps, .spoofSignature, .DEBUG)' chiteroman.json > tmp.json && mv tmp.json chiteroman.json
 
 # Migrate osmosis
-./migrate_osmosis.sh -a pif.json osmosis.json 
+./migrate_osmosis.sh -s pif.json osmosis.json # This is for strong
+./migrate_osmosis.sh pif.json device_osmosis.json 
 
 # Delete prev pif
 rm pif.json
-
-# No ts
-cp osmosis.json device_osmosis.json 
-
-# Adapt for tricky
-jq '.spoofProps = "0" | .spoofProvider = "0"' osmosis.json  > tmp.json
-
-# Get back original file
-rm osmosis.json
-mv tmp.json osmosis.json 
 
 # Check for backup files and remove them if they exist
 find . -maxdepth 1 -name "*.bak" -exec rm {} \;
