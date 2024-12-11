@@ -99,6 +99,8 @@ find . -maxdepth 1 -name "*_HTML" -exec rm {} \;
 # Add fields on chiteroman.json
 ./migrate_chiteroman.sh pif.json chiteroman.json
 jq 'del(.BRAND, .PRODUCT, .DEVICE, .RELEASE, .ID, .INCREMENTAL, .TYPE, .TAGS, .spoofProvider, .spoofProps, .spoofSignature, .DEBUG)' chiteroman.json > tmp.json && mv tmp.json chiteroman.json
+echo "cat new json"
+cat chiteroman.json
 
 # Migrate osmosis
 ./migrate_osmosis.sh -s pif.json osmosis.json # This is for strong
