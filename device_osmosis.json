@@ -1,4 +1,5 @@
 {
+  // Build Fields
     "MANUFACTURER": "Google",
     "MODEL": "Pixel 6",
     "FINGERPRINT": "google/oriole_beta/oriole:15/BP11.241025.006/12620009:user/release-keys",
@@ -12,12 +13,9 @@
     "TAGS": "release-keys",
     "SECURITY_PATCH": "2024-11-05",
     "DEVICE_INITIAL_SDK_INT": "32",
+
+  // System Properties
     "*.build.id": "BP11.241025.006",
     "*.security_patch": "2024-11-05",
-    "*api_level": "32",
-    "spoofBuild": "1",
-    "spoofProps": "1",
-    "spoofProvider": "1",
-    "spoofSignature": "0",
-    "verboseLogs": "0"
+    "*api_level": "32"
 }
