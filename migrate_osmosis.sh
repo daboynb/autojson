@@ -15,7 +15,7 @@ die() { [ "$INSTALL" ] || echo "$N$N! $@"; exit 1; }
 grep_get_json() {
   local target="$FILE";
   [ -n "$2" ] && target="$2";
-  eval set -- "$(cat "$target" | tr -d '\r\n' | grep -m1 -o "$1"'".*' | cut -d: -f2-)";
+  eval set -- "$(cat "$target" | tr -d '\r\n' | grep -m1 -o "$1"'".*' | cut -d: -f2- | sed 's|//|#|g')";
   echo "$1" | sed -e 's|"|\\\\\\"|g' -e 's|[,}]*$||';
 }
 grep_check_json() {
@@ -138,14 +138,17 @@ fi;
 [ "$INSTALL" ] || item "Writing fields and properties to updated custom.pif.json ...";
 
 (echo "{";
+echo "  // Build Fields";
 for FIELD in $ALLFIELDS; do
   eval echo '\ \ \ \ \"$FIELD\": \"'\$$FIELD'\",';
 done;
+echo "$N  // System Properties";
 echo '    "*.build.id": "'$ID'",';
 echo "    $SECURITY_COMMENT"'"*.security_patch": "'$SECURITY_PATCH'",';
 [ -z "$VNDK_VERSION" ] || echo '    "*.vndk.version": "'$VNDK_VERSION'",';
 echo '    "*api_level": "'$DEVICE_INITIAL_SDK_INT'",';
 if [ "$ADVANCED" ]; then
+  echo "$N  // Advanced Settings";
   for SETTING in $ADVSETTINGS; do
     eval echo '\ \ \ \ \"$SETTING\": \"'\$$SETTING'\",';
   done;
