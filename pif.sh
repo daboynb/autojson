@@ -99,7 +99,7 @@ find . -maxdepth 1 -name "*_HTML" -exec rm {} \;
 # Add fields on chiteroman.json
 ./migrate_chiteroman.sh pif.json chiteroman.json
 # I'll add this back when chiteroman will publish the release
-#jq 'del(.BRAND, .PRODUCT, .DEVICE, .RELEASE, .ID, .INCREMENTAL, .TYPE, .TAGS, .spoofProvider, .spoofProps, .spoofSignature, .DEBUG)' chiteroman.json > tmp.json && mv tmp.json chiteroman.json
+jq 'del(.BRAND, .PRODUCT, .DEVICE, .RELEASE, .ID, .INCREMENTAL, .TYPE, .TAGS, .spoofProvider, .spoofProps, .spoofSignature, .DEBUG)' chiteroman.json > tmp.json && mv tmp.json chiteroman.json
 
 # Migrate osmosis
 ./migrate_osmosis.sh -a pif.json osmosis.json 
