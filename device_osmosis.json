@@ -1,10 +1,10 @@
 {
     "MANUFACTURER": "Google",
-    "MODEL": "Pixel 6",
-    "FINGERPRINT": "google/oriole_beta/oriole:15/BP11.241210.004/12926906:user/release-keys",
+    "MODEL": "Pixel 7a",
+    "FINGERPRINT": "google/lynx_beta/lynx:15/BP11.241210.004/12926906:user/release-keys",
     "BRAND": "google",
-    "PRODUCT": "oriole_beta",
-    "DEVICE": "oriole",
+    "PRODUCT": "lynx_beta",
+    "DEVICE": "lynx",
     "RELEASE": "15",
     "ID": "BP11.241210.004",
     "INCREMENTAL": "12926906",
@@ -16,8 +16,8 @@
     "*.security_patch": "2025-01-05",
     "*api_level": "32",
     "spoofBuild": "1",
-    "spoofProps": "1",
-    "spoofProvider": "1",
+    "spoofProps": "0",
+    "spoofProvider": "0",
     "spoofSignature": "0",
     "verboseLogs": "0"
 }
