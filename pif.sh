@@ -1,91 +1,147 @@
 #!/bin/bash
 
-# Function to retry a command up to 3 times with a 30-second delay
-retry() {
-  local n=1
-  local max=3
-  local delay=30
-  until "$@"; do
-    if [[ $n -lt $max ]]; then
-      ((n++))
-      echo "Attempt $n/$max failed. Retrying in $delay seconds..."
-      sleep $delay
-    else
-      echo "Attempt $n/$max failed. No more retries left."
-      exit 1
-    fi
-  done
-}
-
-# Check for JSON files and remove them if they exist
-find . -maxdepth 1 -name "*.json" -exec rm {} \;
-
-# Check for backup files and remove them if they exist
-find . -maxdepth 1 -name "*.bak" -exec rm {} \;
-
+# Print a message indicating the start of the crawling process
 echo "Crawling Android Developers for latest Pixel Beta ..."
 
-# Download the Pixel GSI HTML page with retry logic
-retry wget -q -O PIXEL_GSI_HTML --no-check-certificate https://developer.android.com/topic/generic-system-image/releases 2>&1 || exit 1
+# Download the Android versions page and save it to PIXEL_VERSIONS_HTML
+wget -q -O PIXEL_VERSIONS_HTML --no-check-certificate https://developer.android.com/about/versions 2>&1 || exit 1
 
-# Extract the first occurrence of a Beta version from the HTML
-grep -m1 -o 'li>.*(Beta)' PIXEL_GSI_HTML | cut -d\> -f2
+# Extract the latest versions URL from PIXEL_VERSIONS_HTML
+# Download the latest version page and save it to PIXEL_LATEST_HTML
+wget -q -O PIXEL_LATEST_HTML --no-check-certificate $(grep -o 'https://developer.android.com/about/versions/.*[0-9]"' PIXEL_VERSIONS_HTML | sort -ru | cut -d\" -f1 | head -n1) 2>&1 || exit 1
 
-# Get the release version, build ID, and incremental version
-RELEASE="$(grep -m1 'corresponding Google Pixel builds' PIXEL_GSI_HTML | grep -o '/versions/.*' | cut -d\/ -f3)"
-ID="$(grep -m1 -o 'Build:.*' PIXEL_GSI_HTML | cut -d\  -f2)"
-INCREMENTAL="$(grep -m1 -o "$ID-.*-" PIXEL_GSI_HTML | cut -d- -f2)"
-
-# Download the corresponding Google Pixel builds HTML page with retry logic
-retry wget -q -O PIXEL_GET_HTML --no-check-certificate https://developer.android.com$(grep -m1 'corresponding Google Pixel builds' PIXEL_GSI_HTML | grep -o 'href.*' | cut -d\" -f2) 2>&1 || exit 1
-
-# Download the factory images for Google Pixel with retry logic
-retry wget -q -O PIXEL_BETA_HTML --no-check-certificate https://developer.android.com$(grep -m1 'Factory images for Google Pixel' PIXEL_GET_HTML | grep -o 'href.*' | cut -d\" -f2) 2>&1 || exit 1
-
-# Extract model and product lists
-MODEL_LIST="$(grep -A1 'tr id=' PIXEL_BETA_HTML | grep 'td' | sed 's;.*<td>\(.*\)</td>;\1;')"
-PRODUCT_LIST="$(grep -o 'factory/.*_beta' PIXEL_BETA_HTML | cut -d\/ -f2)"
-
-# Download the security bulletin for Pixel with retry logic
-retry wget -q -O PIXEL_SECBULL_HTML --no-check-certificate https://source.android.com/docs/security/bulletin/pixel 2>&1 || exit 1
-
-# Get the latest security patch level
-SECURITY_PATCH="$(grep -A15 "$(grep -m1 -o 'Security patch level:.*' PIXEL_GSI_HTML | cut -d\  -f4-)" PIXEL_SECBULL_HTML | grep -m1 -B1 '</tr>' | grep 'td' | sed 's;.*<td>\(.*\)</td>;\1;')"
-
-# Check for device matching
+# Check if the first argument is '-p' to force preview mode
 case "$1" in
-  -m)
-    DEVICE="$(getprop ro.product.device)"
-    case "$PRODUCT_LIST" in
-      *${DEVICE}_beta*)
-        MODEL="$(getprop ro.product.model)"
-        PRODUCT="${DEVICE}_beta"
-      ;;
-    esac
-  ;;
+  -p)
+    FORCE_PREVIEW=1
+    shift
+    ;;
 esac
 
+# Determine if the latest HTML contains a Developer Preview or preview program tooltip
+# and if FORCE_PREVIEW is not set, download the second latest version
+if grep -qE 'Developer Preview|tooltip>.*preview program' PIXEL_LATEST_HTML && [ ! "$FORCE_PREVIEW" ]; then
+  wget -q -O PIXEL_BETA_HTML --no-check-certificate $(grep -o 'https://developer.android.com/about/versions/.*[0-9]"' PIXEL_VERSIONS_HTML | sort -ru | cut -d\" -f1 | head -n2 | tail -n1) 2>&1 || exit 1
+else
+  # If not a preview, set TITLE to "Preview" and rename PIXEL_LATEST_HTML to PIXEL_BETA_HTML
+  TITLE="Preview"
+  mv -f PIXEL_LATEST_HTML PIXEL_BETA_HTML
+fi
+
+# Check if the first argument is '-d' to set FORCE_DEPTH
+case "$1" in
+  -d)
+    FORCE_DEPTH=$2
+    shift 2
+    ;;
+  *)
+    FORCE_DEPTH=1
+    ;;
+esac
+
+# Download the OTA (Over-The-Air) update page based on FORCE_DEPTH
+# Extract the OTA download link from PIXEL_BETA_HTML
+wget -q -O PIXEL_OTA_HTML --no-check-certificate https://developer.android.com$(grep -o 'href=".*download-ota.*"' PIXEL_BETA_HTML | cut -d\" -f2 | head -n$FORCE_DEPTH | tail -n1) 2>&1 || exit 1
+
+# Extract and print the Android version and Beta title from PIXEL_OTA_HTML
+echo "$(grep -m1 -oE 'tooltip>Android .*[0-9]' PIXEL_OTA_HTML | cut -d\> -f2) $TITLE$(grep -oE 'tooltip>QPR.* Beta' PIXEL_OTA_HTML | cut -d\> -f2 | head -n$FORCE_DEPTH | tail -n1)"
+
+# Extract the release date from PIXEL_OTA_HTML and format it as YYYY-MM-DD
+BETA_REL_DATE="$(date -d "$(grep -m1 -A1 'Release date' PIXEL_OTA_HTML | tail -n1 | sed 's;.*<td>\(.*\)</td>.*;\1;')" '+%Y-%m-%d')"
+
+# Calculate the estimated expiry date by adding 6 weeks to the release date
+BETA_EXP_DATE="$(date -d "@$(($(date -d "$BETA_REL_DATE" '+%s') + 60 * 60 * 24 * 7 * 6))" '+%Y-%m-%d')"
+
+# Print the beta release and estimated expiry dates
+echo "Beta Released: $BETA_REL_DATE \
+  \nEstimated Expiry: $BETA_EXP_DATE"
+
+# Extract lists of models, products, and OTA links from PIXEL_OTA_HTML
+MODEL_LIST="$(grep -A1 'tr id=' PIXEL_OTA_HTML | grep 'td' | sed 's;.*<td>\(.*\)</td>;\1;')"
+PRODUCT_LIST="$(grep -o 'ota/.*_beta' PIXEL_OTA_HTML | cut -d\/ -f2)"
+OTA_LIST="$(grep 'ota/.*_beta' PIXEL_OTA_HTML | cut -d\" -f2)"
+
+# Check if the first argument is '-m' to select a specific device
+case "$1" in
+  -m)
+    # Get the device identifier from system properties
+    DEVICE="$(getprop ro.product.device)"
+    
+    # Check if the device is in the PRODUCT_LIST
+    case "$PRODUCT_LIST" in
+      *${DEVICE}_beta*)
+        # Get the model name from system properties
+        MODEL="$(getprop ro.product.model)"
+        PRODUCT="${DEVICE}_beta"
+        # Find the corresponding OTA link for the product
+        OTA="$(echo "$OTA_LIST" | grep "$PRODUCT")"
+        ;;
+    esac
+    ;;
+esac
+
+# Inform the user that a Pixel Beta device is being selected
 echo "Selecting Pixel Beta device ..."
 
-# Always select the first one from the list 
-set_latest_beta() {
-    # Extract the first model and product from the list 
-    MODEL="$(echo "$MODEL_LIST" | head -n 1)"
-    PRODUCT="$(echo "$PRODUCT_LIST" | head -n 1)"
+# If no specific product was selected, choose a random beta device
+if [ -z "$PRODUCT" ]; then
+  set_random_beta() {
+    # Get the count of available models
+    local list_count="$(echo "$MODEL_LIST" | wc -l)"
+    # Select a random number within the list count
+    local list_rand="$((RANDOM % list_count + 1))"
+    # Set Internal Field Separator to newline for proper splitting
+    local IFS=$'\n'
+    
+    # Select the MODEL based on the random index
+    set -- $MODEL_LIST
+    MODEL="$(eval echo \${$list_rand})"
+    
+    # Select the PRODUCT based on the random index
+    set -- $PRODUCT_LIST
+    PRODUCT="$(eval echo \${$list_rand})"
+    
+    # Select the OTA link based on the random index
+    set -- $OTA_LIST
+    OTA="$(eval echo \${$list_rand})"
+    
+    # Derive the DEVICE identifier from the PRODUCT by removing '_beta'
     DEVICE="$(echo "$PRODUCT" | sed 's/_beta//')"
-}
+  }
+  
+  # Call the function to set a random beta device
+  set_random_beta
+fi
 
-# Call the function to set the latest beta
-set_latest_beta
-
+# Print the selected model and product
 echo "$MODEL ($PRODUCT)"
 
+# Download the OTA metadata with a file size limit to prevent excessive downloads
+# - ulimit -f 2: Limit the file size to 2 blocks (typically 1KB)
+# Redirect stderr to /dev/null to suppress error messages
+(ulimit -f 2; wget -q -O PIXEL_ZIP_METADATA --no-check-certificate $OTA) 2>/dev/null
+
+# Extract the fingerprint from the metadata
+FINGERPRINT="$(grep -am1 'post-build=' PIXEL_ZIP_METADATA | cut -d= -f2)"
+
+# Extract the security patch level from the metadata
+SECURITY_PATCH="$(grep -am1 'security-patch-level=' PIXEL_ZIP_METADATA | cut -d= -f2)"
+
+# Check if both FINGERPRINT and SECURITY_PATCH were successfully extracted
+if [ -z "$FINGERPRINT" ] || [ -z "$SECURITY_PATCH" ]; then
+  echo "\nError: Failed to extract information from metadata!"
+  exit 1
+fi
+
+# Inform the user that values are being dumped to pif.json
 echo "Dumping values to minimal pif.json ..."
+
+# Create pif.json with the extracted information
 cat <<EOF | tee pif.json
 {
   "MANUFACTURER": "Google",
   "MODEL": "$MODEL",
-  "FINGERPRINT": "google/$PRODUCT/$DEVICE:$RELEASE/$ID/$INCREMENTAL:user/release-keys",
+  "FINGERPRINT": "$FINGERPRINT",
   "PRODUCT": "$PRODUCT",
   "DEVICE": "$DEVICE",
   "SECURITY_PATCH": "$SECURITY_PATCH",
@@ -95,27 +151,29 @@ EOF
 
 # Remove temporary HTML files if they exist
 find . -maxdepth 1 -name "*_HTML" -exec rm {} \;
+find . -maxdepth 1 -name "*_METADATA" -exec rm {} \;
 
-# Add fields on chiteroman.json
+# Add fields to chiteroman.json using the migrate_chiteroman.sh script
 ./migrate_chiteroman.sh pif.json chiteroman.json
-# I'll add this back when chiteroman will publish the release
+
+# Modify chiteroman.json by removing specific fields using jq
 jq 'del(.BRAND, .PRODUCT, .DEVICE, .RELEASE, .ID, .INCREMENTAL, .TYPE, .TAGS, .spoofProvider, .spoofProps, .spoofSignature, .DEBUG)' chiteroman.json > tmp.json && mv tmp.json chiteroman.json
 
-# Migrate osmosis
+# Migrate data using the migrate_osmosis.sh script and output to osmosis.json
 ./migrate_osmosis.sh -a pif.json osmosis.json 
 
-# Delete prev pif
+# Delete the previously created pif.json as it's no longer needed
 rm pif.json
 
-# No ts
+# Copy osmosis.json to device_osmosis.json without timestamp (ts)
 cp osmosis.json device_osmosis.json 
 
-# Adapt for tricky
+# Adapt osmosis.json for "tricky" by setting spoof properties to "0" using jq
 jq '.spoofProps = "0" | .spoofProvider = "0"' osmosis.json  > tmp.json
 
-# Get back original file
+# Replace the original osmosis.json with the modified version
 rm osmosis.json
 mv tmp.json osmosis.json 
 
-# Check for backup files and remove them if they exist
+# Remove any backup files with the .bak extension if they exist
 find . -maxdepth 1 -name "*.bak" -exec rm {} \;
