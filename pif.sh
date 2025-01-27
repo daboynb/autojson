@@ -170,18 +170,11 @@ rm pif.json
 # "spoofProps": "1" per device_osmosis.json
 # "spoofProvider": "1" per device_osmosis.json
 # Modifica le proprietà desiderate
-jq '
-  .spoofProps = "1" |
-  .spoofBuild = "1" |
-  .spoofProvider = "1"
-' device_osmosis.json > tmp.json
-
-# Sostituisce il file originale con quello modificato
-mv tmp.json device_osmosis.json
+jq '(.spoofProps, .spoofBuild, .spoofProvider) = "1"' device_osmosis.json > tmp.json && mv tmp.json device_osmosis.json
 
 # "spoofBuild": "1" per osmosis.json
 # Modifica le proprietà desiderate
-jq '.spoofBuild = "1"' osmosis.json > tmp.json
+jq '(.spoofProps, .spoofProvider) = "0" | .spoofBuild = "1"' osmosis.json > tmp.json && mv tmp.json osmosis.json
 
 # Sostituisce il file originale con quello modificato
 mv tmp.json osmosis.json
