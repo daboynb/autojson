@@ -154,10 +154,10 @@ find . -maxdepth 1 -name "*_HTML" -exec rm {} \;
 find . -maxdepth 1 -name "*_METADATA" -exec rm {} \;
 
 # Add fields to chiteroman.json using the migrate_chiteroman.sh script
-./migrate_chiteroman.sh pif.json chiteroman.json
+cp pif.json chiteroman.json
 
 # Modify chiteroman.json by removing specific fields using jq
-jq 'del(.BRAND, .PRODUCT, .DEVICE, .RELEASE, .ID, .INCREMENTAL, .TYPE, .TAGS, .spoofProvider, .spoofProps, .spoofSignature, .DEBUG)' chiteroman.json > tmp.json && mv tmp.json chiteroman.json
+jq 'del(.PRODUCT, .DEVICE)' chiteroman.json > tmp.json && mv tmp.json chiteroman.json
 
 # Migrate data using the migrate_osmosis.sh script and output to osmosis.json
 ./migrate_osmosis.sh -a pif.json osmosis.json 
