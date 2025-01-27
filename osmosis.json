@@ -1,10 +1,10 @@
 {
   "MANUFACTURER": "Google",
-  "MODEL": "Pixel 6a",
-  "FINGERPRINT": "google/bluejay_beta/bluejay:15/BP11.241210.004/12926906:user/release-keys",
+  "MODEL": "Pixel 9 Pro",
+  "FINGERPRINT": "google/caiman_beta/caiman:15/BP11.241210.004/12926906:user/release-keys",
   "BRAND": "google",
-  "PRODUCT": "bluejay_beta",
-  "DEVICE": "bluejay",
+  "PRODUCT": "caiman_beta",
+  "DEVICE": "caiman",
   "RELEASE": "15",
   "ID": "BP11.241210.004",
   "INCREMENTAL": "12926906",
@@ -16,7 +16,7 @@
   "*.security_patch": "2025-01-05",
   "*api_level": "32",
   "spoofBuild": "1",
-  "spoofProps": "1",
+  "spoofProps": "0",
   "spoofProvider": "0",
   "spoofSignature": "0",
   "verboseLogs": "0"
