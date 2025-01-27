@@ -169,7 +169,7 @@ rm pif.json
 cp osmosis.json device_osmosis.json 
 
 # Adapt osmosis.json for "tricky" by setting spoof properties to "0" using jq
-jq '.spoofProps = "0" | .spoofProvider = "0"' osmosis.json  > tmp.json
+jq '.spoofProps = "1" | .spoofProvider = "0"' osmosis.json  > tmp.json
 
 # Replace the original osmosis.json with the modified version
 rm osmosis.json
