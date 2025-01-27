@@ -160,20 +160,31 @@ cp pif.json chiteroman.json
 jq 'del(.PRODUCT, .DEVICE)' chiteroman.json > tmp.json && mv tmp.json chiteroman.json
 
 # Migrate data using the migrate_osmosis.sh script and output to osmosis.json
+./migrate_osmosis.sh -a pif.json device_osmosis.json 
 ./migrate_osmosis.sh -a pif.json osmosis.json 
 
 # Delete the previously created pif.json as it's no longer needed
 rm pif.json
 
-# Copy osmosis.json to device_osmosis.json without timestamp (ts)
-cp osmosis.json device_osmosis.json 
+# "spoofBuild": "1" per device_osmosis.json
+# "spoofProps": "1" per device_osmosis.json
+# "spoofProvider": "1" per device_osmosis.json
+# Modifica le proprietà desiderate
+jq '
+  .spoofProps = "1" |
+  .spoofBuild = "1" |
+  .spoofProvider = "1"
+' device_osmosis.json > tmp.json
 
-# Adapt osmosis.json for "tricky" by setting spoof properties to "0" using jq
-jq '.spoofProps = "1" | .spoofProvider = "0"' osmosis.json  > tmp.json
+# Sostituisce il file originale con quello modificato
+mv tmp.json device_osmosis.json
 
-# Replace the original osmosis.json with the modified version
-rm osmosis.json
-mv tmp.json osmosis.json 
+# "spoofBuild": "1" per osmosis.json
+# Modifica le proprietà desiderate
+jq '.spoofBuild = "1"' osmosis.json > tmp.json
+
+# Sostituisce il file originale con quello modificato
+mv tmp.json osmosis.json
 
 # Remove any backup files with the .bak extension if they exist
 find . -maxdepth 1 -name "*.bak" -exec rm {} \;
