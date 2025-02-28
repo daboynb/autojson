@@ -1,7 +1,7 @@
 {
   "MANUFACTURER": "Google",
-  "MODEL": "Pixel 7 Pro",
-  "FINGERPRINT": "google/cheetah_beta/cheetah:15/BP11.241210.004/12926906:user/release-keys",
+  "MODEL": "Pixel 9 Pro Fold",
+  "FINGERPRINT": "google/comet_beta/comet:15/BP11.241210.004/12926906:user/release-keys",
   "SECURITY_PATCH": "2025-01-05",
   "DEVICE_INITIAL_SDK_INT": "32"
 }
