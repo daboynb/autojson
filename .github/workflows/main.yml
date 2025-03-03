@@ -20,7 +20,7 @@ jobs:
         run: chmod +x *.sh
 
       - name: Generate JSON file
-        run: ./pif.sh
+        run: ./pif.sh -p
 
       - name: Check differences in chiteroman.json
         run: |
