@@ -1,7 +1,7 @@
 {
   "MANUFACTURER": "Google",
-  "MODEL": "Pixel Tablet",
-  "FINGERPRINT": "google/tangorpro_beta/tangorpro:Baklava/BP22.250124.010/13116449:user/release-keys",
+  "MODEL": "Pixel 8a",
+  "FINGERPRINT": "google/akita_beta/akita:Baklava/BP22.250124.010/13116449:user/release-keys",
   "SECURITY_PATCH": "2025-02-05",
   "DEVICE_INITIAL_SDK_INT": "32"
 }
