@@ -1,7 +1,7 @@
 {
   "MANUFACTURER": "Google",
-  "MODEL": "Pixel 8",
-  "FINGERPRINT": "google/shiba_beta/shiba:Baklava/BP22.250124.010/13116449:user/release-keys",
+  "MODEL": "Pixel 9",
+  "FINGERPRINT": "google/tokay_beta/tokay:Baklava/BP22.250124.010/13116449:user/release-keys",
   "SECURITY_PATCH": "2025-02-05",
   "DEVICE_INITIAL_SDK_INT": "32"
 }
