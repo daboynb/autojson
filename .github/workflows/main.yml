@@ -1,10 +1,12 @@
 name: Autojson main
+
 on:
   workflow_dispatch: 
-
-  push: 
+  push:
     branches:
       - main
+  schedule:
+    - cron: '0 * * * *' # Runs at the start of every hour
 
 jobs:
   build:
@@ -14,8 +16,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          ref: main  
-      
+          ref: main
+
       - name: Grant execute permission for script
         run: chmod +x *.sh
 
@@ -31,7 +33,7 @@ jobs:
             git config --global user.email "username@users.noreply.github.com"
             git add chiteroman.json
             git add osmosis.json
-            git add device_osmosis.json 
+            git add device_osmosis.json
             git commit -m "Update pif.json"
             git push
           fi
