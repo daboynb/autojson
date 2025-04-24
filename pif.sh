@@ -157,7 +157,7 @@ find . -maxdepth 1 -name "*_METADATA" -exec rm {} \;
 cp pif.json chiteroman.json
 
 # Modify chiteroman.json by removing specific fields using jq
-jq 'del(.PRODUCT, .DEVICE)' chiteroman.json > tmp.json && mv tmp.json chiteroman.json
+jq 'del(.PRODUCT, .DEVICE, .DEVICE_INITIAL_SDK_INT)' chiteroman.json > tmp.json && mv tmp.json chiteroman.json
 
 # Migrate data using the migrate_osmosis.sh script and output to osmosis.json
 ./migrate_osmosis.sh -a pif.json device_osmosis.json 
