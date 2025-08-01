@@ -1,6 +1,6 @@
 {
   "MANUFACTURER": "Google",
-  "MODEL": "Pixel 6",
-  "FINGERPRINT": "google/oriole_beta/oriole:16/BP31.250610.004.A1/13770421:user/release-keys",
-  "SECURITY_PATCH": "2025-06-05"
+  "MODEL": "Pixel 7 Pro",
+  "FINGERPRINT": "google/cheetah_beta/cheetah:16/BP31.250610.004/13769805:user/release-keys",
+  "SECURITY_PATCH": "2025-07-05"
 }
