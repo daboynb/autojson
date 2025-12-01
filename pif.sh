@@ -153,31 +153,53 @@ EOF
 find . -maxdepth 1 -name "*_HTML" -exec rm {} \;
 find . -maxdepth 1 -name "*_METADATA" -exec rm {} \;
 
-# Add fields to chiteroman.json using the migrate_chiteroman.sh script
-cp pif.json chiteroman.json
+# Migrate data using migrate.sh script
+# Save original pif.json as base for migration
+mv pif.json pif_base.json
 
-# Modify chiteroman.json by removing specific fields using jq
-jq 'del(.PRODUCT, .DEVICE, .DEVICE_INITIAL_SDK_INT)' chiteroman.json > tmp.json && mv tmp.json chiteroman.json
+# pif.json: for STRONG integrity with Tricky Store + hardware keybox
+# Note: Pixel Beta fingerprints can NO LONGER pass DEVICE integrity
+# They can ONLY be used for STRONG integrity setups with Tricky Store
+# spoofProvider=0 required, spoofBuild=1 and spoofProps=1 for fingerprint spoofing
+# Requires *api_level > 25 (we use 32)
+./migrate.sh -f -a pif_base.json pif.json
+# Remove // comments for jq compatibility
+sed -i 's|//.*||g; /^[[:space:]]*$/d' pif.json
+jq '(.spoofBuild, .spoofProps) = "1" | (.spoofProvider, .spoofSignature, .spoofVendingFinger, .spoofVendingSdk) = "0"' pif.json > tmp.json && mv tmp.json pif.json
 
-# Migrate data using the migrate_osmosis.sh script and output to osmosis.json
-./migrate_osmosis.sh -a pif.json device_osmosis.json 
-./migrate_osmosis.sh -a pif.json osmosis.json 
-
-# Delete the previously created pif.json as it's no longer needed
-rm pif.json
-
-# "spoofBuild": "1" per device_osmosis.json
-# "spoofProps": "1" per device_osmosis.json
-# "spoofProvider": "1" per device_osmosis.json
-# Modifica le proprietà desiderate
-jq '(.spoofProps, .spoofBuild, .spoofProvider) = "1"' device_osmosis.json > tmp.json && mv tmp.json device_osmosis.json
-
-# "spoofBuild": "1" per osmosis.json
-# Modifica le proprietà desiderate
-jq '(.spoofProps, .spoofProvider) = "0" | .spoofBuild = "1"' osmosis.json > tmp.json && mv tmp.json osmosis.json
-
-# Sostituisce il file originale con quello modificato
-mv tmp.json osmosis.json
+# Remove temporary file
+rm pif_base.json
 
 # Remove any backup files with the .bak extension if they exist
 find . -maxdepth 1 -name "*.bak" -exec rm {} \;
+
+# Update README with current JSON contents
+echo "Updating README.md with current fingerprints ..."
+
+# Function to update a README section
+update_readme_section() {
+  local start_marker="$1"
+  local end_marker="$2"
+  local json_file="$3"
+  local readme="Readme.md"
+
+  # Create new content with markers
+  local new_content=$(cat <<EOF
+$start_marker
+\`\`\`json
+$(cat "$json_file")
+\`\`\`
+$end_marker
+EOF
+)
+
+  # Use awk to replace content between markers
+  awk -v start="$start_marker" -v end="$end_marker" -v content="$new_content" '
+    $0 ~ start { found=1; print content; next }
+    $0 ~ end { found=0; next }
+    !found { print }
+  ' "$readme" > "${readme}.tmp" && mv "${readme}.tmp" "$readme"
+}
+
+# Update README section
+update_readme_section "<!-- PIF_JSON_START -->" "<!-- PIF_JSON_END -->" "pif.json"
